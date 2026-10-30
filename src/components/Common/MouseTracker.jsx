@@ -1,93 +1,102 @@
-import { useEffect, useRef } from "react";
+
+import { useEffect, useRef, useState } from "react";
 
 function MouseTracker() {
+  const [enabled, setEnabled] = useState(false);
+
   const ringRef = useRef(null);
-  const ringInnerRef = useRef(null);
+  const dotRef = useRef(null);
   const glowRef = useRef(null);
 
   useEffect(() => {
-    // Disable on touch devices
-    if (window.matchMedia("(pointer: coarse)").matches) return;
+    const finePointer = window.matchMedia("(any-pointer: fine)");
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    );
 
-    // Respect reduced-motion preference
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
+    const updateEnabled = () => {
+      setEnabled(finePointer.matches && !reducedMotion.matches);
+    };
+
+    updateEnabled();
+
+    finePointer.addEventListener("change", updateEnabled);
+    reducedMotion.addEventListener("change", updateEnabled);
+
+    return () => {
+      finePointer.removeEventListener("change", updateEnabled);
+      reducedMotion.removeEventListener("change", updateEnabled);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!enabled) return;
 
     const ring = ringRef.current;
-    const ringInner = ringInnerRef.current;
+    const dot = dotRef.current;
     const glow = glowRef.current;
 
-    let mouseX = window.innerWidth / 2;
-    let mouseY = window.innerHeight / 2;
+    if (!ring || !dot || !glow) return;
 
-    let ringX = mouseX;
-    let ringY = mouseY;
-
-    let glowX = mouseX;
-    let glowY = mouseY;
-
+    let mouseX = -100;
+    let mouseY = -100;
+    let ringX = -100;
+    let ringY = -100;
+    let glowX = -100;
+    let glowY = -100;
     let animationFrame;
+    let visible = false;
 
-    const handleMouseMove = (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
+    const interactiveSelector =
+      "a, button, [role='button'], input, textarea, select, label";
+
+    const handleMouseMove = (event) => {
+      mouseX = event.clientX;
+      mouseY = event.clientY;
+
+      if (!visible) {
+        visible = true;
+        ring.style.opacity = "1";
+        dot.style.opacity = "1";
+        glow.style.opacity = "1";
+
+        ringX = mouseX;
+        ringY = mouseY;
+        glowX = mouseX;
+        glowY = mouseY;
+      }
+
+      const target =
+        event.target instanceof Element
+          ? event.target.closest(interactiveSelector)
+          : null;
+
+      ring.classList.toggle("cursor-hover", Boolean(target));
+      glow.classList.toggle("glow-hover", Boolean(target));
     };
 
-    const handleMouseOver = (e) => {
-      const interactiveElement = e.target.closest(
-        "a, button, [role='button'], input, textarea, select"
-      );
-
-      if (interactiveElement) {
-        ringInner.classList.add("scale-150");
-        ringInner.classList.add("border-cyan-200");
-        ringInner.classList.add("bg-cyan-400/20");
-
-        glow.classList.add("scale-125");
-        glow.classList.add("bg-cyan-400/15");
-      }
-    };
-
-    const handleMouseOut = (e) => {
-      const interactiveElement = e.target.closest(
-        "a, button, [role='button'], input, textarea, select"
-      );
-
-      if (
-        interactiveElement &&
-        (!e.relatedTarget ||
-          !interactiveElement.contains(e.relatedTarget))
-      ) {
-        ringInner.classList.remove("scale-150");
-        ringInner.classList.remove("border-cyan-200");
-        ringInner.classList.remove("bg-cyan-400/20");
-
-        glow.classList.remove("scale-125");
-        glow.classList.remove("bg-cyan-400/15");
-      }
+    const handleMouseLeave = () => {
+      visible = false;
+      ring.style.opacity = "0";
+      dot.style.opacity = "0";
+      glow.style.opacity = "0";
     };
 
     const animate = () => {
-      // Main ring follows mouse
-      ringX += (mouseX - ringX) * 0.25;
-      ringY += (mouseY - ringY) * 0.25;
+      ringX += (mouseX - ringX) * 0.28;
+      ringY += (mouseY - ringY) * 0.28;
 
-      // Glow follows slightly slower
-      glowX += (mouseX - glowX) * 0.08;
-      glowY += (mouseY - glowY) * 0.08;
+      glowX += (mouseX - glowX) * 0.1;
+      glowY += (mouseY - glowY) * 0.1;
 
-      ring.style.transform = `translate3d(
-        ${ringX - 14}px,
-        ${ringY - 14}px,
-        0
-      )`;
+      ring.style.transform =
+        `translate3d(${ringX - 17}px, ${ringY - 17}px, 0)`;
 
-      glow.style.transform = `translate3d(
-        ${glowX - 60}px,
-        ${glowY - 60}px,
-        0
-      )`;
+      dot.style.transform =
+        `translate3d(${mouseX - 3}px, ${mouseY - 3}px, 0)`;
+
+      glow.style.transform =
+        `translate3d(${glowX - 45}px, ${glowY - 45}px, 0)`;
 
       animationFrame = requestAnimationFrame(animate);
     };
@@ -95,87 +104,65 @@ function MouseTracker() {
     window.addEventListener("mousemove", handleMouseMove, {
       passive: true,
     });
-
-    document.addEventListener("mouseover", handleMouseOver);
-    document.addEventListener("mouseout", handleMouseOut);
+    document.documentElement.addEventListener(
+      "mouseleave",
+      handleMouseLeave
+    );
+    document.documentElement.addEventListener(
+      "mouseenter",
+      () => {
+        visible = false;
+      }
+    );
 
     animationFrame = requestAnimationFrame(animate);
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseover", handleMouseOver);
-      document.removeEventListener("mouseout", handleMouseOut);
+      document.documentElement.removeEventListener(
+        "mouseleave",
+        handleMouseLeave
+      );
       cancelAnimationFrame(animationFrame);
     };
-  }, []);
+  }, [enabled]);
+
+  if (!enabled) return null;
 
   return (
     <>
-      {/* Large soft glow */}
+      <style>{`
+        .cursor-hover {
+          width: 42px !important;
+          height: 42px !important;
+          margin: -4px;
+          border-color: #a5f3fc !important;
+          background: rgba(34, 211, 238, 0.12);
+          box-shadow: 0 0 24px rgba(34, 211, 238, 0.65);
+        }
+
+        .glow-hover {
+          opacity: 0.9 !important;
+        }
+      `}</style>
+
       <div
         ref={glowRef}
-        className="
-          pointer-events-none
-          fixed
-          left-0
-          top-0
-          z-[9998]
-          h-[120px]
-          w-[120px]
-          rounded-full
-          bg-cyan-400/10
-          blur-2xl
-          transition-all
-          duration-300
-        "
         aria-hidden="true"
+        className="pointer-events-none fixed left-0 top-0 z-[9998] h-[90px] w-[90px] rounded-full bg-cyan-400/10 opacity-0 blur-2xl transition-opacity duration-200"
       />
 
-      {/* Cursor position wrapper */}
       <div
         ref={ringRef}
-        className="
-          pointer-events-none
-          fixed
-          left-0
-          top-0
-          z-[9999]
-          h-7
-          w-7
-        "
         aria-hidden="true"
-      >
-        {/* Cursor ring */}
-        <div
-          ref={ringInnerRef}
-          className="
-            relative
-            flex
-            h-7
-            w-7
-            items-center
-            justify-center
-            rounded-full
-            border-2
-            border-cyan-300
-            bg-cyan-400/10
-            shadow-[0_0_15px_rgba(34,211,238,0.8)]
-            transition-all
-            duration-300
-          "
-        >
-          {/* Inner dot */}
-          <div
-            className="
-              h-2
-              w-2
-              rounded-full
-              bg-cyan-300
-              shadow-[0_0_10px_rgba(34,211,238,1)]
-            "
-          />
-        </div>
-      </div>
+        className="pointer-events-none fixed left-0 top-0 z-[9999] h-[34px] w-[34px] rounded-full border border-cyan-300/80 bg-cyan-400/[0.04] opacity-0 shadow-[0_0_18px_rgba(34,211,238,0.5)] transition-[width,height,background-color,border-color] duration-200"
+      />
+
+      <div
+        ref={dotRef}
+        aria-hidden="true"
+        className="pointer-events-none fixed left-0 top-0 z-[10000] h-[6px] w-[6px] rounded-full bg-cyan-200 opacity-0 shadow-[0_0_12px_rgba(34,211,238,1)]"
+      />
     </>
   );
 }

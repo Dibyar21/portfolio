@@ -1,9 +1,64 @@
 @import "tailwindcss";
 
+/* ================= Global Responsive Foundation ================= */
+
+:root {
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+  min-width: 320px;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: clip;
+  background-color: #020617;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Prevent media from exceeding its container */
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+img {
+  height: auto;
+}
+
+/* Prevent long content from expanding layouts */
+
+h1,
+h2,
+h3,
+p {
+  overflow-wrap: break-word;
+}
+
+/* ================= Slow Spin Animation ================= */
+
 @keyframes spin-slow {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -13,3 +68,19 @@
   animation: spin-slow 8s linear infinite;
 }
 
+/* Respect accessibility preferences */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
