@@ -212,7 +212,7 @@ My interests include software development, web technologies, artificial intellig
 
 - 🌐 **Portfolio:** [djdev.vercel.app](https://djdev.vercel.app/)
 - 🐙 **GitHub:** [@Dibyar21](https://github.com/Dibyar21)
-- 💼 **LinkedIn:** [Connect with me]((https://www.linkedin.com/in/dibyaranjan-jena-1761a2294/)
+- 💼 **LinkedIn:** [Connect with me](https://www.linkedin.com/in/dibyaranjan-jena-1761a2294/)
 
 ---
 
